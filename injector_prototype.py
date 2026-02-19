@@ -9,6 +9,7 @@ keyboard = Controller()
 
 special_keys = {
         "space": Key.space,
+        "backspace": Key.backspace,
         "return": Key.enter,
         "up": Key.up,
         "down": Key.down,
@@ -26,14 +27,14 @@ while True:
             #pulsar en pynput
             print(f"Pulsando {tecla}")
             if tecla in special_keys:
-                keyboard.press(special_keys["tecla"])
+                keyboard.press(special_keys[tecla])
             else:
                 keyboard.press(tecla)
         elif message["action"]=="released":
             #soltar en pynput
             print(f"Soltando {tecla}")
             if tecla in special_keys:
-                keyboard.release(special_keys["tecla"])
+                keyboard.release(special_keys[tecla])
             else:
                 keyboard.release(tecla)
 
