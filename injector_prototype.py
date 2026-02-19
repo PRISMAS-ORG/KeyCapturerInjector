@@ -15,6 +15,7 @@ special_keys = {
         "down": Key.down,
         "left": Key.left,
         "right": Key.right,
+        "escape": Key.esc
     }
 
 
@@ -23,6 +24,8 @@ while True:
         data,_ = socket.recvfrom(4096)
         message = json.loads(data.decode('utf-8'))
         tecla = message["key"]
+        if tecla == "escape":
+            break
         if message["action"]=="pressed":
             #pulsar en pynput
             print(f"Pulsando {tecla}")

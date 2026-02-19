@@ -54,7 +54,7 @@ while running:
             socket.sendto(message,server_address)
             #last_event=ahora_mismo
             running = False
-            
+
     end = time.perf_counter()
     #pygame.time.Clock().tick(60)
     #print(f"Bucle en: {(end-start)*1000}")
