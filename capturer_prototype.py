@@ -1,5 +1,12 @@
-import pygame
-import sys,time
+import pygame, socket
+import sys,time,json
+
+socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = ('127.0.0.1',5001)
+
+packet = {"key":None,
+        "action": None,
+        "value": None}
 
 
 pygame.init()
@@ -19,17 +26,35 @@ while running:
         if event.type == pygame.KEYDOWN:
             tecla = pygame.key.name(event.key)
             print(f"Tecla presionada: {tecla}")
-            
+            #envias
+            packet["key"]=tecla
+            packet["action"] = "pressed"
+            message = json.dumps(packet).encode('utf-8')
+            socket.sendto(message,server_address)
+            #last_event=ahora_mismo
 
         if event.type == pygame.KEYUP:
             tecla = pygame.key.name(event.key)
             print(f"Tecla soltada: {tecla}")
+            #envias
+            packet["key"]=tecla
+            packet["action"] = "released"
+            message = json.dumps(packet).encode('utf-8')
+            socket.sendto(message,server_address)
+            #last_event=ahora_mismo
 
         if event.type == pygame.QUIT:
             running = False
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            #envias
+            packet["key"]=tecla
+            packet["action"] = "released"
+            message = json.dumps(packet).encode('utf-8')
+            socket.sendto(message,server_address)
+            #last_event=ahora_mismo
             running = False
+            
     end = time.perf_counter()
     #pygame.time.Clock().tick(60)
     #print(f"Bucle en: {(end-start)*1000}")

@@ -3,7 +3,7 @@ from pynput.keyboard import Controller, Key
 
 # -------- CONFIG --------
 FILE_PATH = "texto.txt"
-DELAY = 0.5  # segundos entre teclas
+DELAY = 0.1  # segundos entre teclas
 # ------------------------
 
 keyboard = Controller()

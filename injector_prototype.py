@@ -1,0 +1,47 @@
+import time,socket, sys
+from pynput.keyboard import Controller, Key
+import json
+
+socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket.bind(('127.0.0.1', 5001))
+
+keyboard = Controller()
+
+special_keys = {
+        "space": Key.space,
+        "return": Key.enter,
+        "up": Key.up,
+        "down": Key.down,
+        "left": Key.left,
+        "right": Key.right,
+    }
+
+
+while True:
+	try:
+		data,_ = socket.recvfrom(4096)
+		message = json.loads(data.decode('utf-8'))
+		tecla = message["key"]
+		if message["action"]=="pressed":
+			#pulsar en pynput
+			print(f"Pulsando {tecla}")
+			if tecla in special_keys:
+				keyboard.press(special_keys["tecla"])
+			else:
+				keyboard.press(tecla)
+		elif message["action"]=="released":
+			#soltar en pynput
+			print(f"Soltando {tecla}")
+			if tecla in special_keys:
+            	keyboard.release(special_keys["tecla"])
+            else:
+            	keyboard.release(tecla)
+
+
+
+	except KeyboardInterrupt:
+		print("Saliendo")
+		sys.exit()
+
+	except ConnectionResetError:
+		continue
