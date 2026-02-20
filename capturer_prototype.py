@@ -2,7 +2,7 @@ import pygame, socket
 import sys,time,json
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('192.168.1.113',5001)
+server_address = ('80.28.209.181',8081)
 
 packet = {"key":None,
         "action": None,

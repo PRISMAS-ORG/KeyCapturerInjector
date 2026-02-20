@@ -2,8 +2,10 @@ import time,socket, sys
 from pynput.keyboard import Controller, Key
 import json
 
-socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket.bind(('0.0.0.0', 5001))
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('0.0.0.0', 5001))
+#En el server nokia OBLIGATORIO bind ip local
+sock.settimeout(60)
 
 keyboard = Controller()
 
@@ -21,7 +23,7 @@ special_keys = {
 
 while True:
     try:
-        data,_ = socket.recvfrom(4096)
+        data,_ = sock.recvfrom(4096)
         message = json.loads(data.decode('utf-8'))
         tecla = message["key"]
         if tecla == "escape":
