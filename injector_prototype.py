@@ -24,6 +24,7 @@ special_keys = {
 while True:
     try:
         data,_ = sock.recvfrom(4096)
+        sock.settimeout(10)# segundos sin recibir nada, y se puede cerrar
         message = json.loads(data.decode('utf-8'))
         tecla = message["key"]
         if tecla == "escape":
@@ -49,5 +50,6 @@ while True:
         print("Saliendo")
         sys.exit()
 
-    except ConnectionResetError:
+    except (ConnectionResetError,socket.timeout):
+        time.sleep(0.1)
         continue
