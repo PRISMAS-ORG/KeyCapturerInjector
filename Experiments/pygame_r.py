@@ -290,8 +290,8 @@ import sys
 # =========================
 # CONFIGURACIÓN
 # =========================
-SERVER_IP = '127.0.0.1'  # IP del servidor
-PORT = 8081
+SERVER_IP = '80.28.209.181'  # IP del servidor
+PORT = 8082
 SEND_RATE_HZ = 250           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
 
@@ -431,13 +431,13 @@ while running:
 
     # Limitar frecuencia
     dt = clock.tick(SEND_RATE_HZ)
-    if dt > max_dt:
-        max_dt = dt
+    #if dt > max_dt:
+    #    max_dt = dt
     #end = time.perf_counter()
     #loop_time = end-start
     #if loop_time>max_loop_time:
     #    max_loop_time = loop_time
-    print(max_dt)
+    #print(max_dt)
 
 # =========================
 # SALIDA LIMPIA

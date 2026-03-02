@@ -1,68 +1,104 @@
-import pygame, socket
+import pygame, socket, struct
 import sys,time,json
 
-socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('192.168.1.113',8081)
 
-packet = {"key":None,
-        "action": None,
-        "value": None}
+# =========================
+# CONFIGURACIÓN
+# =========================
+SERVER_IP = '127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
+PORT = 8082
+SEND_RATE_HZ = 250           # Frecuencia de envío UDP
+DEADZONE = 0.1               # Zona muerta para joysticks
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = (SERVER_IP,PORT)
+
+'''
+provisional packet
+w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
+ejes mando: axes[0], axes[1], axes[2], axes[3]
+16 botones
+'''
+packet_format = ">16B4f16B"
+teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
+,"space","return","left shift","left ctrl","escape"]
+teclas_packet = [0]*16
+axes = [0.0]*4  # Left stick X/Y, Right stick X/Y
+last_axes = [0.0]*4
+buttons = [0] * 16           # 16 botones
 
 
 pygame.init()
+pygame.joystick.init()
 screen = pygame.display.set_mode((400, 200))
 pygame.display.set_caption("Captura teclado - pygame")
 
 print("Ventana activa necesaria para capturar teclado")
 print("Pulsa ESC para salir")
 
+
+#Detectar joystick
+if pygame.joystick.get_count() > 0:
+    joy = pygame.joystick.Joystick(0)
+    joy.init()
+    print("Joystick detectado:", joy.get_name())
+else:
+    joy = None
+    print("No hay joystick, usando teclado solamente")
+
+
 max_loop_time = 0
 running = True
 while running:
-    start = time.perf_counter()
     #if ahora - last_event >= 100:
         #send paquete
     #else:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             tecla = pygame.key.name(event.key)
-            print(f"Tecla presionada: {tecla}")
-            #envias
-            packet["key"]=tecla
-            packet["action"] = "pressed"
-            message = json.dumps(packet).encode('utf-8')
-            socket.sendto(message,server_address)
-            #last_event=ahora_mismo
-            #packet.add(tecla pulsada)
+            #print(f"Tecla presionada: {tecla}")
+            if tecla in teclas_list:
+                teclas_packet[teclas_list.index(tecla)] = 1
 
         if event.type == pygame.KEYUP:
             tecla = pygame.key.name(event.key)
-            print(f"Tecla soltada: {tecla}")
-            #envias
-            packet["key"]=tecla
-            packet["action"] = "released"
-            message = json.dumps(packet).encode('utf-8')
-            socket.sendto(message,server_address)
-            #last_event=ahora_mismo
-            #packet.add(tecla levantada)
+            #print(f"Tecla soltada: {tecla}")
+            if tecla in teclas_list:
+                teclas_packet[teclas_list.index(tecla)] = 0
 
-            #packet.add(eje inclinado)
+        if event.type == pygame.JOYBUTTONDOWN:
+            boton = event.button
+            #print(f"boton pulsado:{boton}")
+            buttons[boton] = 1
+
+        if event.type == pygame.JOYBUTTONUP:
+            boton = event.button
+            #print(f"boton soltado:{boton}") 
+            buttons[boton] = 0
 
         if event.type == pygame.QUIT:
             running = False
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            #envias
-            packet["key"]=tecla
-            packet["action"] = "released"
-            message = json.dumps(packet).encode('utf-8')
-            socket.sendto(message,server_address)
-            #last_event=ahora_mismo
-            #print(f"Max loop time: {max_loop_time}")
             running = False
 
-    end = time.perf_counter()
-    #loop_time = pygame.time.Clock().tick(60)
+    if joy:
+        # Ejes
+        for i in range(min(4, joy.get_numaxes())):
+            val = joy.get_axis(i)
+            if abs(val) < DEADZONE:
+                val = 0.0
+            axes[i] = val
+            # DEBUG solo si cambia se printa
+            if round(val, 2) != round(last_axes[i], 2):
+                #print(f"Eje {i}: {val:.2f}")
+                last_axes[i] = val
+
+    #print(teclas_packet)
+    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons)
+    sock.sendto(packet, (SERVER_IP, PORT))
+    print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
+    loop_time = pygame.time.Clock().tick(SEND_RATE_HZ)
 
 pygame.quit()
 sys.exit()
