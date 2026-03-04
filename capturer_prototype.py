@@ -5,9 +5,9 @@ import sys,time,json
 # =========================
 # CONFIGURACIÓN
 # =========================
-SERVER_IP = '127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
+SERVER_IP = '80.28.209.181'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
 PORT = 8082
-SEND_RATE_HZ = 250           # Frecuencia de envío UDP
+SEND_RATE_HZ = 30           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -19,13 +19,14 @@ w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 '''
-packet_format = ">16B4f16B"
+packet_format = ">16B4f16B2b"
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 teclas_packet = [0]*16
 axes = [0.0]*4  # Left stick X/Y, Right stick X/Y
 last_axes = [0.0]*4
 buttons = [0] * 16           # 16 botones
+dpad = [0] * 2
 
 
 pygame.init()
@@ -76,6 +77,11 @@ while running:
             #print(f"boton soltado:{boton}") 
             buttons[boton] = 0
 
+        if event.type == pygame.JOYHATMOTION:
+            # event.value contiene la tupla (x, y)
+            dpad[0] = event.value[0]
+            dpad[1] = event.value[1]
+
         if event.type == pygame.QUIT:
             running = False
 
@@ -95,9 +101,10 @@ while running:
                 last_axes[i] = val
 
     #print(teclas_packet)
-    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons)
+    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad)
     sock.sendto(packet, (SERVER_IP, PORT))
     print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
+    #print(*dpad)
     loop_time = pygame.time.Clock().tick(SEND_RATE_HZ)
 
 pygame.quit()
