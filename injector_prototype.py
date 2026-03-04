@@ -14,7 +14,7 @@ w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 '''
-packet_format = ">16B4f16B2b"
+packet_format = ">16B6f16B2b"
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 
@@ -87,14 +87,14 @@ def hat_to_pov_4dir(x, y):
 print("Inyector iniciado")
 while True:
     try:
-        data,_ = sock.recvfrom(50)
+        data,_ = sock.recvfrom(58)
         sock.settimeout(10)# segundos sin recibir nada, y se puede cerrar
         #leemos el paquete
         message = struct.unpack(packet_format,data)
         teclas = message[:16]
-        ejes = message[16:20]
-        buttons = message[20:36]
-        dpad = message[36:]
+        ejes = message[16:22]
+        buttons = message[22:38]
+        dpad = message[38:]
         print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}", end="\r")
         #print(f"dpad: {dpad}")
         
@@ -122,22 +122,24 @@ while True:
         # Ejes
         j.set_axis(pyvjoy.HID_USAGE_X, axis_to_vjoy(message[16]))  # Left stick X
         j.set_axis(pyvjoy.HID_USAGE_Y, axis_to_vjoy(message[17]))  # Left stick Y
-        j.set_axis(pyvjoy.HID_USAGE_RX, axis_to_vjoy(message[18])) # Right stick X
-        j.set_axis(pyvjoy.HID_USAGE_RY, axis_to_vjoy(message[19])) # Right stick Y
+        j.set_axis(pyvjoy.HID_USAGE_Z, axis_to_vjoy(message[18]))  # Left stick Z
+        j.set_axis(pyvjoy.HID_USAGE_RX, axis_to_vjoy(message[19])) # Right stick X
+        j.set_axis(pyvjoy.HID_USAGE_RY, axis_to_vjoy(message[20])) # Right stick Y
+        j.set_axis(pyvjoy.HID_USAGE_RZ, axis_to_vjoy(message[21])) # Right stick Z
 
         # Botones (vJoy 1-16)
-        for index, button_value in enumerate(message[20:36]):
+        for index, button_value in enumerate(message[22:38]):
             if button_value != button_state[index]:
                 j.set_button(index+1, button_value)  # vJoy botones empiezan en 1
                 button_state[index] = button_value
         #hat o dpad
-        if dpad_state[0] != message[36] or dpad_state[1] != message[37]:
-            #pov_value = hat_to_pov(message[36],message[37])
-            pov_value = hat_to_pov_4dir(message[36],message[37])
-            #print(message[36],message[37],pov_value)
+        if dpad_state[0] != message[38] or dpad_state[1] != message[39]:
+            #pov_value = hat_to_pov(message[38],message[39])
+            pov_value = hat_to_pov_4dir(message[38],message[39])
+            #print(message[38],message[39],pov_value)
             j.set_disc_pov(1, pov_value)
-            dpad_state[0] = message[36]
-            dpad_state[1] = message[37]
+            dpad_state[0] = message[38]
+            dpad_state[1] = message[39]
         
 
 

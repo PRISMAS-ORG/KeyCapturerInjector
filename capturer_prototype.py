@@ -5,7 +5,7 @@ import sys,time,json
 # =========================
 # CONFIGURACIÓN
 # =========================
-SERVER_IP = '80.28.209.181'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
+SERVER_IP = '192.168.1.113'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
 PORT = 8082
 SEND_RATE_HZ = 30           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
@@ -19,12 +19,12 @@ w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 '''
-packet_format = ">16B4f16B2b"
+packet_format = ">16B6f16B2b"
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 teclas_packet = [0]*16
-axes = [0.0]*4  # Left stick X/Y, Right stick X/Y
-last_axes = [0.0]*4
+axes = [0.0]*6  # Left stick X/Y, Right stick X/Y
+last_axes = [0.0]*6
 buttons = [0] * 16           # 16 botones
 dpad = [0] * 2
 
@@ -43,6 +43,7 @@ if pygame.joystick.get_count() > 0:
     joy = pygame.joystick.Joystick(0)
     joy.init()
     print("Joystick detectado:", joy.get_name())
+    print(joy.get_numaxes())
 else:
     joy = None
     print("No hay joystick, usando teclado solamente")
