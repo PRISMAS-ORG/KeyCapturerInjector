@@ -11,24 +11,32 @@ print("Pulsa ESC para salir")
 
 
 mouse_x,mouse_y = 0,0
-mouse_deadzone = 3
+mouse_deadzone = 0
+
+pygame.event.set_grab(True)        # Captura el ratón dentro de la ventana
+#pygame.mouse.set_visible(False)    # Oculta el cursor
+center = (200, 100)
+pygame.mouse.set_pos(center)
+
 
 max_loop_time = 0
+clock = pygame.time.Clock()
 running = True
 while running:
+    #pygame.mouse.set_pos(200,100)
     
     for event in pygame.event.get():
         if event.type == pygame.MOUSEWHEEL:
            print(f"Wheel {event}")
         if event.type == pygame.MOUSEBUTTONDOWN:
-            print(f"Buttondown {event}")
+            print(f"Buttondown {event.button}")
         if event.type == pygame.MOUSEBUTTONUP:
-            print(f"ButtonUP {event}")
+            print(f"ButtonUP {event.button}")
         #if event.type == pygame.MOUSEMOTION:
         #    print(f"Movimiento: {event}")
-        if event.type == pygame.MOUSEMOTION:
-            dx, dy = event.rel
-            print(dx, dy)
+        #if event.type == pygame.MOUSEMOTION:
+        #    dx, dy = event.rel
+        #    print(dx, dy)
         if event.type == pygame.QUIT:
             running = False
 
@@ -41,8 +49,10 @@ while running:
         mouse_x = new_mouse_x
         mouse_y = new_mouse_y
         print(f"Mouse: {mouse_x},{mouse_y}")
+    pygame.mouse.set_pos(center)
+    pygame.display.flip()
 
-    loop_time = pygame.time.Clock().tick(60)
+    loop_time = clock.tick(60)
     
     if loop_time>max_loop_time:
         max_loop_time = loop_time

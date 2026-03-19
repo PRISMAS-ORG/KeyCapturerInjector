@@ -1,5 +1,6 @@
 import time,socket, sys, struct
 from pynput.keyboard import Controller, Key
+from pynput.mouse import Button, Controller as MouseController
 import json
 import pyvjoy  # Para simular mando virtual
 
@@ -8,13 +9,22 @@ sock.bind(('0.0.0.0', 8082))
 #En el server nokia OBLIGATORIO bind ip local
 sock.settimeout(60)
 
+INJECT_KEYS = True
+INJECT_GAMEPAD = True
+INJECT_MOUSE = True
+
 '''
 provisional packet
 w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
+dpad o pov (flechas direccion del mando): dos bytes
+3 botones raton: 3 bytes
+2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
+tam: 69Bytes
 '''
-packet_format = ">16B6f16B2b"
+packet_format = ">16B6f16B2b3B2i"
+packet_len = 69 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 
@@ -22,6 +32,7 @@ teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 teclas_state = [0] * 16 
 button_state = [0] * 16
 dpad_state = [0] * 2
+mouse_button_state = [0] * 3
 
 keyboard = Controller()
 
@@ -38,16 +49,15 @@ special_keys = {
         "left ctrl":Key.ctrl_l
     }
 
+mouse = MouseController()
+mouse.position = (200,200)
+old_position_x = 0
+old_position_y = 0 
+
 #Preparamos el joystick
-# =========================
-# INICIALIZAR MANDO VIRTUAL
-# =========================
 j = pyvjoy.VJoyDevice(1)  # Mando virtual 1
 print("Mando virtual listo")
 
-# =========================
-# FUNCIONES AUXILIARES
-# =========================
 def axis_to_vjoy(value):
     """Convierte eje [-1,1] a rango 0-32768 de vJoy"""
     return int((value + 1) / 2 * 32768)
@@ -85,17 +95,20 @@ def hat_to_pov_4dir(x, y):
     return -1
 
 print("Inyector iniciado")
+
 while True:
     try:
-        data,_ = sock.recvfrom(58)
+        data,_ = sock.recvfrom(packet_len)
         sock.settimeout(10)# segundos sin recibir nada, y se puede cerrar
         #leemos el paquete
         message = struct.unpack(packet_format,data)
         teclas = message[:16]
         ejes = message[16:22]
         buttons = message[22:38]
-        dpad = message[38:]
-        print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}", end="\r")
+        dpad = message[38:40]
+        mouse_buttons = message[40:43]
+        mouse_pos = message[43:45]
+        print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}\nRaton: {mouse_buttons}\nRaton_pos: {mouse_pos}", end="\r")
         #print(f"dpad: {dpad}")
         
         for index,tecla_pressed in enumerate(teclas):
@@ -140,10 +153,23 @@ while True:
             j.set_disc_pov(1, pov_value)
             dpad_state[0] = message[38]
             dpad_state[1] = message[39]
-        
 
-
-
+        #inyeccion de raton
+        if message[40] != mouse_button_state[0]:
+            mouse.press(Button.left) if bool(message[40]) else mouse.release(Button.left)
+            mouse_button_state[0] = message[40]
+        elif message[41] != mouse_button_state[1]:
+            mouse.press(Button.middle) if bool(message[41]) else mouse.release(Button.middle)
+            mouse_button_state[1] = message[41]
+        elif message[42] != mouse_button_state[2]:
+            mouse.press(Button.right) if bool(message[42]) else mouse.release(Button.right)
+            mouse_button_state[2] = message[42]
+        #mouse.position[0] += message[43]
+        #mouse.position[1] += message[44]
+        #m_pos_x = old_position_x + message[43]
+        #m_pos_y = old_position_y + message[44]
+        #mouse.move = (m_pos_x,m_pos_y)
+        mouse.move(message[43],message[44])     
 
     except KeyboardInterrupt:
         print("Saliendo")
@@ -152,4 +178,11 @@ while True:
     except Exception as e:#(ConnectionResetError,socket.timeout):
         #time.sleep(0.1)
         print(f"Error {e}")
-        continue
+        opcion = input("Pulsa y para salir o n para continuar")
+        if opcion=="y":
+            sys.exit()
+        elif opcion=="n":
+            continue
+        else:
+            print("Opcion no reconocida, continuando")
+            continue
