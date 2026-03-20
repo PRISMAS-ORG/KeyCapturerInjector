@@ -168,7 +168,9 @@ while True:
         #mouse.position[1] += message[44]
         #m_pos_x = old_position_x + message[43]
         #m_pos_y = old_position_y + message[44]
-        #mouse.move = (m_pos_x,m_pos_y)
+        #mouse.position = (m_pos_x,m_pos_y)
+        #old_position_x = m_pos_x
+        #old_position_y = m_pos_y
         mouse.move(message[43],message[44])     
 
     except KeyboardInterrupt:
@@ -177,8 +179,8 @@ while True:
 
     except Exception as e:#(ConnectionResetError,socket.timeout):
         #time.sleep(0.1)
-        print(f"Error {e}")
-        opcion = input("Pulsa y para salir o n para continuar")
+        print(f"\nError {e}")
+        opcion = input("Pulsa y para salir o n para continuar: ")
         if opcion=="y":
             sys.exit()
         elif opcion=="n":

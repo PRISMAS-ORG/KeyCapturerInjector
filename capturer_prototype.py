@@ -3,7 +3,7 @@ import sys,time,json
 
 SERVER_IP = '192.168.1.113'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
 PORT = 8082
-SEND_RATE_HZ = 30           # Frecuencia de envío UDP
+SEND_RATE_HZ = 120           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
 MOUSE_DEADZONE = 0
 
@@ -46,7 +46,7 @@ print("Pulsa ESC para salir")
 
 #Config mouse
 pygame.event.set_grab(True)        # Captura el ratón dentro de la ventana
-pygame.mouse.set_visible(True)    # Oculta el cursor
+pygame.mouse.set_visible(False)    # False: Oculta el cursor, en raspi obligatorio
 center = (200, 100)
 pygame.mouse.set_pos(center)
 
@@ -128,7 +128,7 @@ while running:
     if abs(mouse_rel_pos[0] - new_mouse_x) > MOUSE_DEADZONE or abs(mouse_rel_pos[1] - new_mouse_y) > MOUSE_DEADZONE:
         mouse_rel_pos[0] = new_mouse_x
         mouse_rel_pos[1] = new_mouse_y
-    pygame.mouse.set_pos(center)
+    #pygame.mouse.set_pos(center) #En raspi cuando la frecuencia es muy alta esto mete ruido
 
     #Envio de paquete de estado 
     packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad,*mouse_buttons, *mouse_rel_pos)
@@ -141,9 +141,3 @@ while running:
 
 pygame.quit()
 sys.exit()
-
-#El otro hilo
-#while True:
-    #if ahora - last_event >= 100:
-        #send paquete
-    #time.sleep(0.001)
