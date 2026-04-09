@@ -1,5 +1,5 @@
 import pygame, socket, struct
-import sys,time,json
+import sys,time,json, random
 
 SERVER_IP = '192.168.1.113'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
 PORT = 8082
@@ -22,9 +22,11 @@ ejes mando: axes[0], axes[1], axes[2], axes[3]
 dpad o pov (flechas direccion del mando): dos bytes
 3 botones raton: 3 bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
-tam: 69Bytes
+4s, 4 caracteres que informan del estado
+tam: 73Bytes
 '''
-packet_format = ">16B6f16B2b3B2i"
+packet_format = ">16B6f16B2b3B2i4s"
+packet_len = 73 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 teclas_packet = [0]*16
@@ -38,7 +40,9 @@ mouse_rel_pos = [0]*2
 
 pygame.init()
 pygame.joystick.init()
-screen = pygame.display.set_mode((400, 200))
+#screen = pygame.display.set_mode((400, 200))
+#Para pruebas con codec a pantalla completa
+screen = pygame.display.set_mode((1, 1), pygame.NOFRAME)
 pygame.display.set_caption("Captura teclado - pygame")
 
 print("Ventana activa necesaria para capturar teclado")
@@ -46,7 +50,7 @@ print("Pulsa ESC para salir")
 
 #Config mouse
 pygame.event.set_grab(True)        # Captura el ratón dentro de la ventana
-pygame.mouse.set_visible(False)    # False: Oculta el cursor, en raspi obligatorio
+pygame.mouse.set_visible(False)    # False: Oculta el cursor, en raspi obligatorio TODO: Entenderlo
 center = (200, 100)
 pygame.mouse.set_pos(center)
 
@@ -64,6 +68,12 @@ else:
 clock = pygame.time.Clock()
 max_loop_time = 0
 running = True
+
+#simulated_loss
+simulated_loss = 0
+
+#string de estado
+packet_info = "0000"
 
 #Bucle de juego
 while running:
@@ -107,8 +117,20 @@ while running:
         #Eventos de salida: escape, o cerrar ventana
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
+            print("ctrl+q pressed exit")
+            packet_info = "exit"
+            #Uso q, porque ctrl+esc en windows abre el menu de inicio
+            #running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
+            simulated_loss =(simulated_loss+10) % 100
+            packet_info = f"pl{simulated_loss:02d}"
+            #packet_info = packet_info[:4].ljust(4)  # asegura 4 bytes
+            print(f"simulated_loss a {simulated_loss}")
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_F2:
+            simulated_loss =(simulated_loss-10) % 100
+            packet_info = f"pl{simulated_loss:02d}"
+            print(f"simulated_loss a {simulated_loss}")
 
     #Ejes joystick por polling
     if joy:
@@ -125,16 +147,27 @@ while running:
 
     #Posicion relativa raton
     new_mouse_x,new_mouse_y = pygame.mouse.get_rel()
-    if abs(mouse_rel_pos[0] - new_mouse_x) > MOUSE_DEADZONE or abs(mouse_rel_pos[1] - new_mouse_y) > MOUSE_DEADZONE:
-        mouse_rel_pos[0] = new_mouse_x
-        mouse_rel_pos[1] = new_mouse_y
+    #if abs(mouse_rel_pos[0] - new_mouse_x) > MOUSE_DEADZONE or abs(mouse_rel_pos[1] - new_mouse_y) > MOUSE_DEADZONE:
+    mouse_rel_pos[0] = new_mouse_x
+    mouse_rel_pos[1] = new_mouse_y
     #pygame.mouse.set_pos(center) #En raspi cuando la frecuencia es muy alta esto mete ruido
 
     #Envio de paquete de estado 
-    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad,*mouse_buttons, *mouse_rel_pos)
-    sock.sendto(packet, (SERVER_IP, PORT))
-    print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
+    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad,*mouse_buttons, *mouse_rel_pos, packet_info.encode('utf-8'))
+    if simulated_loss <= 0:
+        sock.sendto(packet, (SERVER_IP, PORT))
+    else:
+        # Genera un número entre 0 y 100
+        if random.uniform(0, 100) >= simulated_loss:
+            sock.sendto(packet, (SERVER_IP, PORT))
+        else:
+            # Simula pérdida: no se envía el paquete
+            pass
 
+    #print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
+    if packet_info == "exit":
+        running=False
+    packet_info = "0000"
     #Final del bucle de juego
     pygame.display.flip() #No es obligatorio porque no dibujamos nada, solo recomendable
     loop_time = clock.tick(SEND_RATE_HZ)

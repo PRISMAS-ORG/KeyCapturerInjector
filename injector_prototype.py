@@ -3,11 +3,14 @@ from pynput.keyboard import Controller, Key
 from pynput.mouse import Button, Controller as MouseController
 import json
 import pyvjoy  # Para simular mando virtual
+import ctypes 
+# Constante de Windows para inyectar movimiento relativo de ratón 
+MOUSEEVENTF_MOVE = 0x0001
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('0.0.0.0', 8082))
 #En el server nokia OBLIGATORIO bind ip local
-sock.settimeout(60)
+sock.settimeout(120)
 
 INJECT_KEYS = True
 INJECT_GAMEPAD = True
@@ -21,10 +24,11 @@ ejes mando: axes[0], axes[1], axes[2], axes[3]
 dpad o pov (flechas direccion del mando): dos bytes
 3 botones raton: 3 bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
-tam: 69Bytes
+4s, 4 caracteres que informan del estado
+tam: 73Bytes
 '''
-packet_format = ">16B6f16B2b3B2i"
-packet_len = 69 #bytes
+packet_format = ">16B6f16B2b3B2i4s"
+packet_len = 73 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 
@@ -99,7 +103,7 @@ print("Inyector iniciado")
 while True:
     try:
         data,_ = sock.recvfrom(packet_len)
-        sock.settimeout(10)# segundos sin recibir nada, y se puede cerrar
+        sock.settimeout(60)# segundos sin recibir nada, y se puede cerrar
         #leemos el paquete
         message = struct.unpack(packet_format,data)
         teclas = message[:16]
@@ -108,7 +112,12 @@ while True:
         dpad = message[38:40]
         mouse_buttons = message[40:43]
         mouse_pos = message[43:45]
-        print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}\nRaton: {mouse_buttons}\nRaton_pos: {mouse_pos}", end="\r")
+        packet_info = message[45].decode().strip('\x00') #si mide menos puede haber byte nulo
+        if packet_info != "0000":
+            print(f"[State_info]: {packet_info}")
+            if packet_info == "exit":
+                break
+        #print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}\nRaton: {mouse_buttons}\nRaton_pos: {mouse_pos}", end="\r")
         #print(f"dpad: {dpad}")
         
         for index,tecla_pressed in enumerate(teclas):
@@ -156,22 +165,20 @@ while True:
 
         #inyeccion de raton
         if message[40] != mouse_button_state[0]:
+            #print(f"Mouse left: {message[40]}")
             mouse.press(Button.left) if bool(message[40]) else mouse.release(Button.left)
             mouse_button_state[0] = message[40]
-        elif message[41] != mouse_button_state[1]:
+        if message[41] != mouse_button_state[1]:
             mouse.press(Button.middle) if bool(message[41]) else mouse.release(Button.middle)
             mouse_button_state[1] = message[41]
-        elif message[42] != mouse_button_state[2]:
+        if message[42] != mouse_button_state[2]:
             mouse.press(Button.right) if bool(message[42]) else mouse.release(Button.right)
             mouse_button_state[2] = message[42]
-        #mouse.position[0] += message[43]
-        #mouse.position[1] += message[44]
-        #m_pos_x = old_position_x + message[43]
-        #m_pos_y = old_position_y + message[44]
-        #mouse.position = (m_pos_x,m_pos_y)
-        #old_position_x = m_pos_x
-        #old_position_y = m_pos_y
-        mouse.move(message[43],message[44])     
+        #Movimiento moderno
+        #mouse.move(message[43],message[44])
+        #Movimiento de raton legacy de windows
+        if message[43] != 0 or message[44] != 0:
+            ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE, message[43], message[44], 0, 0)
 
     except KeyboardInterrupt:
         print("Saliendo")
