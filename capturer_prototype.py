@@ -22,11 +22,12 @@ ejes mando: axes[0], axes[1], axes[2], axes[3]
 dpad o pov (flechas direccion del mando): dos bytes
 3 botones raton: 3 bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
+2 int para rueda de raton (x e y)
 4s, 4 caracteres que informan del estado
-tam: 73Bytes
+tam: 75Bytes
 '''
-packet_format = ">16B6f16B2b3B2i4s"
-packet_len = 73 #bytes
+packet_format = ">16B6f16B2b3B2i2i4s"
+packet_len = 81 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 teclas_packet = [0]*16
@@ -36,6 +37,7 @@ buttons = [0] * 16           # 16 botones
 dpad = [0] * 2
 mouse_buttons = [0]*3
 mouse_rel_pos = [0]*2
+mouse_wheel = [0]*2
 
 
 pygame.init()
@@ -75,8 +77,11 @@ simulated_loss = 0
 #string de estado
 packet_info = "0000"
 
+#control de prints
+frame_number = -1
 #Bucle de juego
 while running:
+    frame_number = (frame_number+1) % SEND_RATE_HZ
     for event in pygame.event.get():
         #Eventos de teclas
         if event.type == pygame.KEYDOWN:
@@ -113,6 +118,9 @@ while running:
             boton_mouse = event.button-1
             if boton_mouse < 3:
                 mouse_buttons[boton_mouse]= 0
+        if event.type == pygame.MOUSEWHEEL:
+            mouse_wheel[0] = event.x
+            mouse_wheel[1] = event.y
 
         #Eventos de salida: escape, o cerrar ventana
         if event.type == pygame.QUIT:
@@ -153,22 +161,27 @@ while running:
     #pygame.mouse.set_pos(center) #En raspi cuando la frecuencia es muy alta esto mete ruido
 
     #Envio de paquete de estado 
-    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad,*mouse_buttons, *mouse_rel_pos, packet_info.encode('utf-8'))
+    packet = struct.pack(packet_format,*teclas_packet,*axes,*buttons,*dpad,*mouse_buttons, *mouse_rel_pos, *mouse_wheel, packet_info.encode('utf-8'))
     if simulated_loss <= 0:
         sock.sendto(packet, (SERVER_IP, PORT))
     else:
-        # Genera un número entre 0 y 100
+        # Genera un numero entre 0 y 100
         if random.uniform(0, 100) >= simulated_loss:
             sock.sendto(packet, (SERVER_IP, PORT))
         else:
-            # Simula pérdida: no se envía el paquete
+            #No se hace nada
             pass
 
+    #Despues de enviar se pone la rueda de raton a 0, para que no se inyecte indefinidamente
+    mouse_wheel[0] = 0
+    mouse_wheel[1] = 0
     #print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
     if packet_info == "exit":
         running=False
     packet_info = "0000"
     #Final del bucle de juego
+    if frame_number==0:
+        print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
     pygame.display.flip() #No es obligatorio porque no dibujamos nada, solo recomendable
     loop_time = clock.tick(SEND_RATE_HZ)
 

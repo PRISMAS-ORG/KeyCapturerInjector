@@ -24,11 +24,12 @@ ejes mando: axes[0], axes[1], axes[2], axes[3]
 dpad o pov (flechas direccion del mando): dos bytes
 3 botones raton: 3 bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
+2 int para rueda de raton (x e y)
 4s, 4 caracteres que informan del estado
-tam: 73Bytes
+tam: 75Bytes
 '''
-packet_format = ">16B6f16B2b3B2i4s"
-packet_len = 73 #bytes
+packet_format = ">16B6f16B2b3B2i2i4s"
+packet_len = 81 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
 ,"space","return","left shift","left ctrl","escape"]
 
@@ -55,8 +56,6 @@ special_keys = {
 
 mouse = MouseController()
 mouse.position = (200,200)
-old_position_x = 0
-old_position_y = 0 
 
 #Preparamos el joystick
 j = pyvjoy.VJoyDevice(1)  # Mando virtual 1
@@ -112,10 +111,14 @@ while True:
         dpad = message[38:40]
         mouse_buttons = message[40:43]
         mouse_pos = message[43:45]
-        packet_info = message[45].decode().strip('\x00') #si mide menos puede haber byte nulo
+        mouse_wheel = message[45:47]
+        packet_info = message[47].decode().strip('\x00') #si mide menos puede haber byte nulo
         if packet_info != "0000":
             print(f"[State_info]: {packet_info}")
             if packet_info == "exit":
+                #Se liberan las teclas de la combinacion de salida, para que no se queden inyectadas
+                keyboard.release(Key.ctrl_l)
+                keyboard.release(Key.esc)
                 break
         #print(f"Teclas: {teclas}\nEjes: {ejes}\nBotones: {buttons}\nDpad: {dpad}\nRaton: {mouse_buttons}\nRaton_pos: {mouse_pos}", end="\r")
         #print(f"dpad: {dpad}")
@@ -142,43 +145,46 @@ while True:
         # MAPEO A VJOY
         # -------------------------
         # Ejes
-        j.set_axis(pyvjoy.HID_USAGE_X, axis_to_vjoy(message[16]))  # Left stick X
-        j.set_axis(pyvjoy.HID_USAGE_Y, axis_to_vjoy(message[17]))  # Left stick Y
-        j.set_axis(pyvjoy.HID_USAGE_Z, axis_to_vjoy(message[18]))  # Left stick Z
-        j.set_axis(pyvjoy.HID_USAGE_RX, axis_to_vjoy(message[19])) # Right stick X
-        j.set_axis(pyvjoy.HID_USAGE_RY, axis_to_vjoy(message[20])) # Right stick Y
-        j.set_axis(pyvjoy.HID_USAGE_RZ, axis_to_vjoy(message[21])) # Right stick Z
+        j.set_axis(pyvjoy.HID_USAGE_X, axis_to_vjoy(ejes[0]))  # Left stick X
+        j.set_axis(pyvjoy.HID_USAGE_Y, axis_to_vjoy(ejes[1]))  # Left stick Y
+        j.set_axis(pyvjoy.HID_USAGE_Z, axis_to_vjoy(ejes[2]))  # Left stick Z
+        j.set_axis(pyvjoy.HID_USAGE_RX, axis_to_vjoy(ejes[3])) # Right stick X
+        j.set_axis(pyvjoy.HID_USAGE_RY, axis_to_vjoy(ejes[4])) # Right stick Y
+        j.set_axis(pyvjoy.HID_USAGE_RZ, axis_to_vjoy(ejes[5])) # Right stick Z
 
         # Botones (vJoy 1-16)
-        for index, button_value in enumerate(message[22:38]):
+        for index, button_value in enumerate(buttons):
             if button_value != button_state[index]:
                 j.set_button(index+1, button_value)  # vJoy botones empiezan en 1
                 button_state[index] = button_value
         #hat o dpad
-        if dpad_state[0] != message[38] or dpad_state[1] != message[39]:
+        if dpad_state[0] != dpad[0] or dpad_state[1] != dpad[1]:
             #pov_value = hat_to_pov(message[38],message[39])
-            pov_value = hat_to_pov_4dir(message[38],message[39])
+            pov_value = hat_to_pov_4dir(dpad[0],dpad[1])
             #print(message[38],message[39],pov_value)
             j.set_disc_pov(1, pov_value)
-            dpad_state[0] = message[38]
-            dpad_state[1] = message[39]
+            dpad_state[0] = dpad[0]
+            dpad_state[1] = dpad[1]
 
         #inyeccion de raton
-        if message[40] != mouse_button_state[0]:
-            #print(f"Mouse left: {message[40]}")
-            mouse.press(Button.left) if bool(message[40]) else mouse.release(Button.left)
-            mouse_button_state[0] = message[40]
-        if message[41] != mouse_button_state[1]:
-            mouse.press(Button.middle) if bool(message[41]) else mouse.release(Button.middle)
-            mouse_button_state[1] = message[41]
-        if message[42] != mouse_button_state[2]:
-            mouse.press(Button.right) if bool(message[42]) else mouse.release(Button.right)
-            mouse_button_state[2] = message[42]
+        if mouse_buttons[0] != mouse_button_state[0]:
+            #print(f"Mouse left: {mouse_buttons[40]}")
+            mouse.press(Button.left) if bool(mouse_buttons[0]) else mouse.release(Button.left)
+            mouse_button_state[0] = mouse_buttons[0]
+        if mouse_buttons[1] != mouse_button_state[1]:
+            mouse.press(Button.middle) if bool(mouse_buttons[1]) else mouse.release(Button.middle)
+            mouse_button_state[1] = mouse_buttons[1]
+        if mouse_buttons[2] != mouse_button_state[2]:
+            mouse.press(Button.right) if bool(mouse_buttons[2]) else mouse.release(Button.right)
+            mouse_button_state[2] = mouse_buttons[2]
+        #Rueda del raton
+        if mouse_wheel[1]!=0:#Por ahora solo inyectamos verticalmente
+            mouse.scroll(0,mouse_wheel[1])
         #Movimiento moderno
-        #mouse.move(message[43],message[44])
+        #mouse.move(mouse_pos[0],mouse_pos[1])
         #Movimiento de raton legacy de windows
-        if message[43] != 0 or message[44] != 0:
-            ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE, message[43], message[44], 0, 0)
+        if mouse_pos[0] != 0 or mouse_pos[1] != 0:
+            ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE, mouse_pos[0], mouse_pos[1], 0, 0)
 
     except KeyboardInterrupt:
         print("Saliendo")
