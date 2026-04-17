@@ -1,7 +1,7 @@
 import pygame, socket, struct
 import sys,time,json, random
 
-SERVER_IP = '192.168.1.113'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
+SERVER_IP = '192.168.1.116'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP del servidor
 PORT = 8082
 SEND_RATE_HZ = 120           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
@@ -16,7 +16,7 @@ server_address = (SERVER_IP,PORT)
 
 '''
 provisional packet
-w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
+w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x : 19 teclas
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 dpad o pov (flechas direccion del mando): dos bytes
@@ -24,13 +24,13 @@ dpad o pov (flechas direccion del mando): dos bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
 2 int para rueda de raton (x e y)
 4s, 4 caracteres que informan del estado
-tam: 75Bytes
+tam: 84bytes
 '''
-packet_format = ">16B6f16B2b3B2i2i4s"
-packet_len = 81 #bytes
+packet_format = ">19B6f16B2b3B2i2i4s"
+packet_len = 84 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
-,"space","return","left shift","left ctrl","escape"]
-teclas_packet = [0]*16
+,"space","return","left shift","left ctrl","escape","tab","z","x"]
+teclas_packet = [0]*19
 axes = [0.0]*6  # Left stick X/Y, Right stick X/Y
 last_axes = [0.0]*6
 buttons = [0] * 16           # 16 botones
@@ -52,7 +52,7 @@ print("Pulsa ESC para salir")
 
 #Config mouse
 pygame.event.set_grab(True)        # Captura el ratón dentro de la ventana
-pygame.mouse.set_visible(False)    # False: Oculta el cursor, en raspi obligatorio TODO: Entenderlo
+pygame.mouse.set_visible(False)    # False: Oculta el cursor, en raspi obligatorio
 center = (200, 100)
 pygame.mouse.set_pos(center)
 

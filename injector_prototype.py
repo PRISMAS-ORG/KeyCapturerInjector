@@ -18,7 +18,7 @@ INJECT_MOUSE = True
 
 '''
 provisional packet
-w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc
+w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x : 19 teclas
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 dpad o pov (flechas direccion del mando): dos bytes
@@ -26,15 +26,15 @@ dpad o pov (flechas direccion del mando): dos bytes
 2 int para movimiento relativo (son 4 bytes cada uno con signo, a veces da -1)
 2 int para rueda de raton (x e y)
 4s, 4 caracteres que informan del estado
-tam: 75Bytes
+tam: 84bytes
 '''
-packet_format = ">16B6f16B2b3B2i2i4s"
-packet_len = 81 #bytes
+packet_format = ">19B6f16B2b3B2i2i4s"
+packet_len = 84 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
-,"space","return","left shift","left ctrl","escape"]
+,"space","return","left shift","left ctrl","escape","tab","z","x"]
 
 #Contrlar el estado real de los switches
-teclas_state = [0] * 16 
+teclas_state = [0] * 19 
 button_state = [0] * 16
 dpad_state = [0] * 2
 mouse_button_state = [0] * 3
@@ -51,7 +51,8 @@ special_keys = {
         "right": Key.right,
         "escape": Key.esc,
         "left shift":Key.shift,
-        "left ctrl":Key.ctrl_l
+        "left ctrl":Key.ctrl_l,
+        "tab":Key.tab
     }
 
 mouse = MouseController()
@@ -105,14 +106,14 @@ while True:
         sock.settimeout(60)# segundos sin recibir nada, y se puede cerrar
         #leemos el paquete
         message = struct.unpack(packet_format,data)
-        teclas = message[:16]
-        ejes = message[16:22]
-        buttons = message[22:38]
-        dpad = message[38:40]
-        mouse_buttons = message[40:43]
-        mouse_pos = message[43:45]
-        mouse_wheel = message[45:47]
-        packet_info = message[47].decode().strip('\x00') #si mide menos puede haber byte nulo
+        teclas = message[:19] #19
+        ejes = message[19:25] #6
+        buttons = message[25:41] #16
+        dpad = message[41:43] #2
+        mouse_buttons = message[43:46] #3
+        mouse_pos = message[46:48] #2
+        mouse_wheel = message[48:50] #2
+        packet_info = message[50].decode().strip('\x00') #si mide menos puede haber byte nulo
         if packet_info != "0000":
             print(f"[State_info]: {packet_info}")
             if packet_info == "exit":
