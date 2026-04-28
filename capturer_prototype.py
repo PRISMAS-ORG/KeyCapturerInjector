@@ -16,7 +16,7 @@ server_address = (SERVER_IP,PORT)
 
 '''
 provisional packet
-w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x : 19 teclas
+w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x,alt_l : 20 teclas
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 dpad o pov (flechas direccion del mando): dos bytes
@@ -26,11 +26,11 @@ dpad o pov (flechas direccion del mando): dos bytes
 4s, 4 caracteres que informan del estado
 tam: 84bytes
 '''
-packet_format = ">19B6f16B2b3B2i2i4s"
-packet_len = 84 #bytes
+packet_format = ">20B6f16B2b3B2i2i4s"
+packet_len = 85 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
-,"space","return","left shift","left ctrl","escape","tab","z","x"]
-teclas_packet = [0]*19
+,"space","return","left shift","left ctrl","escape","tab","z","x","left alt"]
+teclas_packet = [0]*20
 axes = [0.0]*6  # Left stick X/Y, Right stick X/Y
 last_axes = [0.0]*6
 buttons = [0] * 16           # 16 botones

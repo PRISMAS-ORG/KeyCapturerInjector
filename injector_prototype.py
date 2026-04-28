@@ -18,7 +18,7 @@ INJECT_MOUSE = True
 
 '''
 provisional packet
-w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x : 19 teclas
+w,a,s,d,e,r,q,up,down,left,right,space,enter,shift_l,ctrl_l,esc,tab,z,x,alt_l : 20 teclas
 ejes mando: axes[0], axes[1], axes[2], axes[3]
 16 botones
 dpad o pov (flechas direccion del mando): dos bytes
@@ -28,13 +28,13 @@ dpad o pov (flechas direccion del mando): dos bytes
 4s, 4 caracteres que informan del estado
 tam: 84bytes
 '''
-packet_format = ">19B6f16B2b3B2i2i4s"
-packet_len = 84 #bytes
+packet_format = ">20B6f16B2b3B2i2i4s"
+packet_len = 85 #bytes
 teclas_list = ["w","a","s","d","e","r","q","up","down","left","right"\
-,"space","return","left shift","left ctrl","escape","tab","z","x"]
+,"space","return","left shift","left ctrl","escape","tab","z","x","left alt"]
 
 #Contrlar el estado real de los switches
-teclas_state = [0] * 19 
+teclas_state = [0] * 20
 button_state = [0] * 16
 dpad_state = [0] * 2
 mouse_button_state = [0] * 3
@@ -52,7 +52,8 @@ special_keys = {
         "escape": Key.esc,
         "left shift":Key.shift,
         "left ctrl":Key.ctrl_l,
-        "tab":Key.tab
+        "tab":Key.tab,
+        "left alt":Key.alt_l
     }
 
 mouse = MouseController()
@@ -106,14 +107,14 @@ while True:
         sock.settimeout(60)# segundos sin recibir nada, y se puede cerrar
         #leemos el paquete
         message = struct.unpack(packet_format,data)
-        teclas = message[:19] #19
-        ejes = message[19:25] #6
-        buttons = message[25:41] #16
-        dpad = message[41:43] #2
-        mouse_buttons = message[43:46] #3
-        mouse_pos = message[46:48] #2
-        mouse_wheel = message[48:50] #2
-        packet_info = message[50].decode().strip('\x00') #si mide menos puede haber byte nulo
+        teclas = message[:20] #19
+        ejes = message[20:26] #6
+        buttons = message[26:42] #16
+        dpad = message[42:44] #2
+        mouse_buttons = message[44:47] #3
+        mouse_pos = message[47:49] #2
+        mouse_wheel = message[49:51] #2
+        packet_info = message[51].decode().strip('\x00') #si mide menos puede haber byte nulo
         if packet_info != "0000":
             print(f"[State_info]: {packet_info}")
             if packet_info == "exit":
