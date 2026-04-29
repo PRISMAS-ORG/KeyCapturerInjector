@@ -5,8 +5,9 @@ SERVER_IP = '192.168.1.116'#'127.0.0.1'  #'192.168.1.113'#'80.28.209.181'  # IP 
 PORT = 8082
 SEND_RATE_HZ = 120           # Frecuencia de envío UDP
 DEADZONE = 0.1               # Zona muerta para joysticks
-MOUSE_DEADZONE = 0
+MOUSE_DEADZONE = 0 #unused
 
+#Hito 2, sera opcional la captura, asi se va mas rapido
 CAPTURE_KEYS = True
 CAPTURE_GAMEPAD = True
 CAPTURE_MOUSE = True
@@ -180,7 +181,7 @@ while running:
         running=False
     packet_info = "0000"
     #Final del bucle de juego
-    if frame_number==0:
+    if frame_number==0: #Se printa un paquete cada x tiempo, asi se ahorra tiempo
         print(f"Paquete: {struct.unpack(packet_format, packet)}", end="\r")
     pygame.display.flip() #No es obligatorio porque no dibujamos nada, solo recomendable
     loop_time = clock.tick(SEND_RATE_HZ)

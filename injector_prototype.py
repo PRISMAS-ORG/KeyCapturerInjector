@@ -12,6 +12,7 @@ sock.bind(('0.0.0.0', 8082))
 #En el server nokia OBLIGATORIO bind ip local
 sock.settimeout(120)
 
+#Hito 2, sera opcional la inyeccion, asi se va mas rapido
 INJECT_KEYS = True
 INJECT_GAMEPAD = True
 INJECT_MOUSE = True
